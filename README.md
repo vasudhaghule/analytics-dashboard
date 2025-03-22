@@ -35,7 +35,8 @@ A cutting-edge web application that transforms complex data into actionable insi
 - **Language**: TypeScript
 - **UI Library**: Material-UI v5
 - **State Management**: Redux Toolkit
-- **Data Visualization**: Recharts
+- **Data Visualization**: Chart.js
+- **WebSocket**: ws for real-time updates
 
 ### External Services
 - OpenWeather API for meteorological data
@@ -45,6 +46,7 @@ A cutting-edge web application that transforms complex data into actionable insi
 ### Development Tools
 - ESLint for code quality
 - Prettier for code formatting
+- Jest for testing
 - TypeScript for type safety
 
 ## 🚀 Getting Started
@@ -106,7 +108,7 @@ npm run test:coverage
 ## 🌐 Deployment
 
 The application is deployed on Vercel:
-[View Live Demo](https://your-vercel-deployment-url.vercel.app)
+[View Live Demo](https://analytics-dashboard-demo.vercel.app)
 
 ## ⚙️ Configuration
 
@@ -140,15 +142,12 @@ The application is deployed on Vercel:
 
 - **Responsive Layout**: Adapts to all screen sizes
 - **Theme Customization**: Dark/Light mode support
-- **Real-time Updates**: Live data refresh
+- **Real-time Updates**: Live data refresh via WebSocket
 - **Interactive Elements**: Dynamic charts and graphs
 - **Search Capabilities**: Find stocks and news
 - **Personal Watchlist**: Track favorite stocks
 - **Error Management**: User-friendly error handling
-
-## 📸 Application Screenshots
-
-[Add your application screenshots here]
+- **Internationalization**: Multi-language support
 
 ## 🤝 Contributing
 
@@ -171,36 +170,4 @@ Special thanks to:
 - [NewsAPI](https://newsapi.org/) for news content
 - [Alpha Vantage](https://www.alphavantage.co/) for financial information
 - [Material-UI](https://mui.com/) for the component library
-
-## Additional Features
-
-- **Responsive Design**: Fully responsive layout that works on all devices
-- **Theme Support**: Dark/Light mode toggle
-- **Real-time Updates**: Live data updates for weather and financial information
-- **Interactive Charts**: Dynamic charts with zoom and pan capabilities
-- **Search Functionality**: Search for stocks and news articles
-- **Watchlist**: Save and track favorite stocks
-- **Error Handling**: Comprehensive error handling and loading states
-
-## Screenshots
-
-[Add your screenshots here]
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [OpenWeatherMap API](https://openweathermap.org/api)
-- [NewsAPI](https://newsapi.org/)
-- [Alpha Vantage](https://www.alphavantage.co/)
-- [Material-UI](https://mui.com/)
+- [Chart.js](https://www.chartjs.org/) for data visualization
