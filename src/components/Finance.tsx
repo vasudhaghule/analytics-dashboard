@@ -1,271 +1,291 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  TextField,
-  Button,
-  CircularProgress,
-  ToggleButtonGroup,
-  ToggleButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
+'use client';
+
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { financeService } from '../services/financeService';
+import { Box, Card, CardContent, Typography, TextField, CircularProgress, Alert } from '@mui/material';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { financeService } from '@/services/financeService';
+import { RootState } from '@/store/store';
 import {
   setSelectedStock,
-  addToWatchlist,
-  removeFromWatchlist,
+  setStockData,
   setHistoricalData,
   setLoading,
   setError,
-  setTimeRange,
-} from '../store/slices/financeSlice';
-import { RootState } from '../store/store';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+} from '@/store/slices/financeSlice';
+import { StockData, HistoricalData, HistoricalDataPoint } from '@/types/finance';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
   Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import DeleteIcon from '@mui/icons-material/Delete';
+  Legend
+);
 
-const StockCard = styled(Card)(({ theme }) => ({
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: theme.palette.background.paper,
-}));
-
-const Finance: React.FC = () => {
+export default function Finance() {
   const dispatch = useDispatch();
-  const { selectedStock, watchlist, historicalData, loading, error, timeRange } = useSelector(
-    (state: RootState) => state.finance
-  );
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Array<{ symbol: string; name: string }>>([]);
+  const {
+    selectedStock,
+    stockData,
+    historicalData,
+    timeRange,
+    loading,
+    error,
+  } = useSelector((state: RootState) => state.finance);
 
-  const fetchStockData = async (symbol: string) => {
+  const [searchInput, setSearchInput] = React.useState('');
+  const [suggestions, setSuggestions] = React.useState<Array<{ symbol: string; name: string }>>([]);
+
+  const transformApiHistoricalData = (data: { [date: string]: { '1. open': string; '2. high': string; '3. low': string; '4. close': string; '5. volume': string; } }): HistoricalData => {
+    const transformedData: HistoricalData = {};
+    
+    Object.entries(data).forEach(([date, values]) => {
+      transformedData[date] = {
+        open: parseFloat(values['1. open']),
+        high: parseFloat(values['2. high']),
+        low: parseFloat(values['3. low']),
+        close: parseFloat(values['4. close']),
+        volume: parseInt(values['5. volume']),
+      };
+    });
+
+    return transformedData;
+  };
+
+  const fetchStockData = async (symbol: string, retryCount = 0) => {
+    if (!symbol || symbol.length < 1) return;
+    
     try {
       dispatch(setLoading(true));
-      const [stockData, historical] = await Promise.all([
-        financeService.getStockData(symbol),
-        financeService.getHistoricalData(symbol, timeRange),
-      ]);
-
-      dispatch(setSelectedStock(stockData));
-      dispatch(setHistoricalData({ symbol, data: historical['Time Series (Daily)'] }));
       dispatch(setError(null));
-    } catch (err) {
-      dispatch(setError('Failed to fetch stock data'));
+      
+      console.log(`Attempting to fetch data for ${symbol}, attempt ${retryCount + 1}`);
+      const data = await financeService.getStockData(symbol);
+      
+      if (!data) {
+        throw new Error('Failed to fetch stock data');
+      }
+      
+      dispatch(setStockData(data));
+
+      // Add delay between API calls to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const historicalResponse = await financeService.getHistoricalData(symbol, timeRange);
+      
+      if (!historicalResponse || !historicalResponse['Time Series (Daily)']) {
+        throw new Error('Failed to fetch historical data');
+      }
+
+      const timeSeriesData = historicalResponse['Time Series (Daily)'];
+      if (Object.keys(timeSeriesData).length === 0) {
+        throw new Error('No historical data available');
+      }
+
+      const transformedData = transformApiHistoricalData(timeSeriesData);
+      dispatch(setHistoricalData(transformedData));
+    } catch (error: any) {
+      console.error('Error in fetchStockData:', error);
+      
+      // If it's a rate limit error and we haven't retried too many times, wait and retry
+      if (error.message.includes('rate limit') && retryCount < 2) {
+        console.log('Rate limit hit, waiting to retry...');
+        dispatch(setError('Rate limit reached. Retrying in 60 seconds...'));
+        await new Promise(resolve => setTimeout(resolve, 60000));
+        return fetchStockData(symbol, retryCount + 1);
+      }
+      
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stock data';
+      dispatch(setError(errorMessage));
+      dispatch(setStockData(null));
+      dispatch(setHistoricalData(null));
     } finally {
       dispatch(setLoading(false));
     }
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery) return;
-    try {
-      const results = await financeService.searchSymbols(searchQuery);
-      setSearchResults(results);
-    } catch (err) {
-      console.error('Failed to search symbols:', err);
+  const searchSymbols = async (query: string) => {
+    if (query.length < 2) {
+      setSuggestions([]);
+      return;
     }
+
+    try {
+      const results = await financeService.searchSymbols(query);
+      setSuggestions(results);
+    } catch (error) {
+      console.error('Error searching symbols:', error);
+      setSuggestions([]);
+    }
+  };
+
+  useEffect(() => {
+    // Set a default stock symbol if none is selected
+    if (!selectedStock) {
+      console.log('No stock selected, setting default to AAPL');
+      setSearchInput('AAPL');
+      dispatch(setSelectedStock('AAPL'));
+    } else {
+      console.log('Stock selected:', selectedStock);
+      fetchStockData(selectedStock);
+    }
+  }, [selectedStock, timeRange]);
+
+  const handleSymbolChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value.toUpperCase();
+    setSearchInput(value);
+    searchSymbols(value);
   };
 
   const handleSymbolSelect = (symbol: string) => {
-    fetchStockData(symbol);
-    setSearchQuery('');
-    setSearchResults([]);
+    setSearchInput(symbol);
+    setSuggestions([]);
+    dispatch(setSelectedStock(symbol));
   };
 
-  const handleAddToWatchlist = () => {
-    if (selectedStock) {
-      dispatch(addToWatchlist(selectedStock));
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && searchInput.length >= 1) {
+      handleSymbolSelect(searchInput);
     }
   };
 
-  const handleRemoveFromWatchlist = (symbol: string) => {
-    dispatch(removeFromWatchlist(symbol));
+  const transformHistoricalData = () => {
+    if (!historicalData) return { labels: [], datasets: [] };
+
+    const dates = Object.keys(historicalData).sort();
+    const prices = dates.map(date => historicalData[date].close);
+
+    return {
+      labels: dates,
+      datasets: [
+        {
+          label: 'Stock Price',
+          data: prices,
+          borderColor: 'rgb(75, 192, 192)',
+          tension: 0.1,
+        },
+      ],
+    };
   };
 
-  const handleTimeRangeChange = (
-    event: React.MouseEvent<HTMLElement>,
-    newTimeRange: '1d' | '1w' | '1m' | '1y' | null
-  ) => {
-    if (newTimeRange !== null) {
-      dispatch(setTimeRange(newTimeRange));
-      if (selectedStock) {
-        fetchStockData(selectedStock.symbol);
-      }
-    }
-  };
+  const chartData = transformHistoricalData();
 
-  const formatChartData = () => {
-    if (!selectedStock || !historicalData[selectedStock.symbol]) return [];
-
-    return Object.entries(historicalData[selectedStock.symbol])
-      .map(([date, data]) => ({
-        date,
-        price: parseFloat(data['4. close']),
-      }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: `${selectedStock || ''} Stock Price History`,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+      },
+    },
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Finance Dashboard
-      </Typography>
-
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Box sx={{ mb: 3 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  label="Search stock symbol"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  variant="outlined"
-                />
-              </Grid>
-              <Grid item>
-                <Button
-                  variant="contained"
-                  onClick={handleSearch}
-                  disabled={loading || !searchQuery}
+    <Card>
+      <CardContent>
+        <Box sx={{ mb: 2, position: 'relative' }}>
+          <TextField
+            label="Stock Symbol"
+            value={searchInput}
+            onChange={handleSymbolChange}
+            onKeyPress={handleKeyPress}
+            variant="outlined"
+            size="small"
+            fullWidth
+            helperText="Enter a stock symbol (e.g., AAPL, MSFT, GOOGL)"
+            error={!!error}
+          />
+          {suggestions.length > 0 && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                bgcolor: 'background.paper',
+                boxShadow: 3,
+                borderRadius: 1,
+                zIndex: 1000,
+                maxHeight: '200px',
+                overflowY: 'auto',
+              }}
+            >
+              {suggestions.map((suggestion) => (
+                <Box
+                  key={suggestion.symbol}
+                  sx={{
+                    p: 1,
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                  onClick={() => handleSymbolSelect(suggestion.symbol)}
                 >
-                  Search
-                </Button>
-              </Grid>
-            </Grid>
-
-            {searchResults.length > 0 && (
-              <Card sx={{ mt: 2 }}>
-                <List>
-                  {searchResults.map((result) => (
-                    <ListItem
-                      button
-                      key={result.symbol}
-                      onClick={() => handleSymbolSelect(result.symbol)}
-                    >
-                      <ListItemText
-                        primary={result.symbol}
-                        secondary={result.name}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Card>
-            )}
-          </Box>
-
-          {selectedStock && (
-            <StockCard>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  {selectedStock.symbol}
-                </Typography>
-                <Typography variant="h3" color={selectedStock.change >= 0 ? 'success.main' : 'error.main'}>
-                  ${selectedStock.price.toFixed(2)}
-                </Typography>
-                <Typography variant="h6" color={selectedStock.change >= 0 ? 'success.main' : 'error.main'}>
-                  {selectedStock.change >= 0 ? '+' : ''}{selectedStock.change.toFixed(2)} ({selectedStock.changePercent.toFixed(2)}%)
-                </Typography>
-
-                <Box sx={{ mt: 3 }}>
-                  <ToggleButtonGroup
-                    value={timeRange}
-                    exclusive
-                    onChange={handleTimeRangeChange}
-                    aria-label="time range"
-                  >
-                    <ToggleButton value="1d">1D</ToggleButton>
-                    <ToggleButton value="1w">1W</ToggleButton>
-                    <ToggleButton value="1m">1M</ToggleButton>
-                    <ToggleButton value="1y">1Y</ToggleButton>
-                  </ToggleButtonGroup>
+                  <Typography variant="body2">
+                    {suggestion.symbol} - {suggestion.name}
+                  </Typography>
                 </Box>
-
-                <Box sx={{ height: 400, mt: 3 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={formatChartData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line
-                        type="monotone"
-                        dataKey="price"
-                        stroke="#8884d8"
-                        name="Price ($)"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </StockCard>
+              ))}
+            </Box>
           )}
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} md={4}>
-          <StockCard>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Watchlist
-              </Typography>
-              <List>
-                {watchlist.map((stock) => (
-                  <ListItem key={stock.symbol}>
-                    <ListItemText
-                      primary={stock.symbol}
-                      secondary={`$${stock.price.toFixed(2)}`}
-                    />
-                    <ListItemSecondaryAction>
-                      <IconButton
-                        edge="end"
-                        aria-label="delete"
-                        onClick={() => handleRemoveFromWatchlist(stock.symbol)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                ))}
-              </List>
-              {selectedStock && !watchlist.find(s => s.symbol === selectedStock.symbol) && (
-                <Button
-                  variant="contained"
-                  onClick={handleAddToWatchlist}
-                  fullWidth
-                >
-                  Add to Watchlist
-                </Button>
-              )}
-            </CardContent>
-          </StockCard>
-        </Grid>
-      </Grid>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-      {error && (
-        <Typography color="error" gutterBottom>
-          {error}
-        </Typography>
-      )}
-    </Box>
+        {loading && (
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+            <CircularProgress />
+          </Box>
+        )}
+
+        {stockData && !loading && !error && (
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              {stockData.symbol} - ${stockData.price.toFixed(2)}
+            </Typography>
+            <Typography color={stockData.change >= 0 ? 'success.main' : 'error.main'}>
+              {stockData.change >= 0 ? '+' : ''}{stockData.change.toFixed(2)} ({stockData.changePercent.toFixed(2)}%)
+            </Typography>
+            <Box sx={{ mt: 2, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 2 }}>
+              <Typography variant="body2">Open: ${stockData.open.toFixed(2)}</Typography>
+              <Typography variant="body2">High: ${stockData.high.toFixed(2)}</Typography>
+              <Typography variant="body2">Low: ${stockData.low.toFixed(2)}</Typography>
+              <Typography variant="body2">Close: ${stockData.close.toFixed(2)}</Typography>
+              <Typography variant="body2">Volume: {stockData.volume.toLocaleString()}</Typography>
+            </Box>
+          </Box>
+        )}
+
+        {historicalData && !loading && !error && (
+          <Box sx={{ height: 400 }}>
+            <Line options={chartOptions} data={chartData} />
+          </Box>
+        )}
+      </CardContent>
+    </Card>
   );
-};
-
-export default Finance; 
+} 

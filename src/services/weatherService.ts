@@ -7,7 +7,9 @@ export interface WeatherResponse {
   main: {
     temp: number;
     humidity: number;
-    wind_speed: number;
+  };
+  wind: {
+    speed: number;
   };
   weather: Array<{
     main: string;
@@ -22,13 +24,24 @@ export interface ForecastResponse {
     main: {
       temp: number;
       humidity: number;
-      wind_speed: number;
+    };
+    wind: {
+      speed: number;
     };
     weather: Array<{
       main: string;
       description: string;
     }>;
   }>;
+}
+
+export interface WeatherData {
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  condition: string;
+  location: string;
+  time?: string;
 }
 
 export const weatherService = {

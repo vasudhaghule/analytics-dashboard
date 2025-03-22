@@ -1,56 +1,39 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-interface StockData {
-  symbol: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  volume: number;
-  high: number;
-  low: number;
-  open: number;
-  close: number;
-}
+import { StockData, HistoricalData, TimeRange } from '@/types/finance';
 
 interface FinanceState {
-  selectedStock: StockData | null;
-  watchlist: StockData[];
-  historicalData: {
-    [symbol: string]: {
-      [date: string]: StockData;
-    };
-  };
+  selectedStock: string | null;
+  stockData: StockData | null;
+  historicalData: HistoricalData | null;
+  timeRange: TimeRange;
   loading: boolean;
   error: string | null;
-  timeRange: '1d' | '1w' | '1m' | '1y';
 }
 
 const initialState: FinanceState = {
   selectedStock: null,
-  watchlist: [],
-  historicalData: {},
+  stockData: null,
+  historicalData: null,
+  timeRange: '1d',
   loading: false,
   error: null,
-  timeRange: '1d',
 };
 
 const financeSlice = createSlice({
   name: 'finance',
   initialState,
   reducers: {
-    setSelectedStock: (state, action: PayloadAction<StockData | null>) => {
+    setSelectedStock: (state, action: PayloadAction<string | null>) => {
       state.selectedStock = action.payload;
     },
-    addToWatchlist: (state, action: PayloadAction<StockData>) => {
-      if (!state.watchlist.find(stock => stock.symbol === action.payload.symbol)) {
-        state.watchlist.push(action.payload);
-      }
+    setStockData: (state, action: PayloadAction<StockData | null>) => {
+      state.stockData = action.payload;
     },
-    removeFromWatchlist: (state, action: PayloadAction<string>) => {
-      state.watchlist = state.watchlist.filter(stock => stock.symbol !== action.payload);
+    setHistoricalData: (state, action: PayloadAction<HistoricalData | null>) => {
+      state.historicalData = action.payload;
     },
-    setHistoricalData: (state, action: PayloadAction<{ symbol: string; data: { [date: string]: StockData } }>) => {
-      state.historicalData[action.payload.symbol] = action.payload.data;
+    setTimeRange: (state, action: PayloadAction<TimeRange>) => {
+      state.timeRange = action.payload;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -58,19 +41,16 @@ const financeSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-    setTimeRange: (state, action: PayloadAction<'1d' | '1w' | '1m' | '1y'>) => {
-      state.timeRange = action.payload;
-    },
   },
 });
 
 export const {
   setSelectedStock,
-  addToWatchlist,
-  removeFromWatchlist,
+  setStockData,
   setHistoricalData,
+  setTimeRange,
   setLoading,
   setError,
-  setTimeRange,
 } = financeSlice.actions;
+
 export default financeSlice.reducer; 

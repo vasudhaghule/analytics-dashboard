@@ -1,12 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-interface WeatherData {
-  temperature: number;
-  humidity: number;
-  windSpeed: number;
-  condition: string;
-  location: string;
-}
+import { WeatherData } from '@/services/weatherService';
 
 interface WeatherState {
   currentWeather: WeatherData | null;

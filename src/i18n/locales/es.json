@@ -1,0 +1,71 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "search": "Buscar"
+  },
+  "auth": {
+    "signIn": "Iniciar Sesión",
+    "signUp": "Registrarse",
+    "signOut": "Cerrar Sesión",
+    "email": "Correo Electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "continueWith": "Continuar con {{provider}}"
+  },
+  "dashboard": {
+    "title": "Panel de Control",
+    "welcome": "Bienvenido, {{name}}",
+    "overview": "Resumen",
+    "recentActivity": "Actividad Reciente"
+  },
+  "finance": {
+    "title": "Finanzas",
+    "stockMarket": "Datos del Mercado de Valores",
+    "watchlist": "Lista de Seguimiento",
+    "price": "Precio",
+    "change": "Cambio",
+    "volume": "Volumen",
+    "high": "Máximo",
+    "low": "Mínimo",
+    "open": "Apertura",
+    "close": "Cierre"
+  },
+  "weather": {
+    "title": "Clima",
+    "current": "Clima Actual",
+    "forecast": "Pronóstico",
+    "temperature": "Temperatura",
+    "humidity": "Humedad",
+    "windSpeed": "Velocidad del Viento"
+  },
+  "news": {
+    "title": "Noticias",
+    "latest": "Últimas Noticias",
+    "breaking": "Noticias de Última Hora",
+    "readMore": "Leer Más"
+  },
+  "settings": {
+    "title": "Configuración",
+    "profile": "Perfil",
+    "preferences": "Preferencias",
+    "notifications": "Notificaciones",
+    "language": "Idioma",
+    "theme": "Tema",
+    "darkMode": "Modo Oscuro"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "clearAll": "Limpiar Todo",
+    "noUpdates": "No hay nuevas notificaciones",
+    "stock_update": "Actualización de Acciones",
+    "news_alert": "Alerta de Noticias",
+    "weather_update": "Actualización del Clima",
+    "notification": "Notificación"
+  }
+} 

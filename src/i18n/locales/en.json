@@ -1,0 +1,71 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "continueWith": "Continue with {{provider}}"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome, {{name}}",
+    "overview": "Overview",
+    "recentActivity": "Recent Activity"
+  },
+  "finance": {
+    "title": "Finance",
+    "stockMarket": "Stock Market Data",
+    "watchlist": "Watchlist",
+    "price": "Price",
+    "change": "Change",
+    "volume": "Volume",
+    "high": "High",
+    "low": "Low",
+    "open": "Open",
+    "close": "Close"
+  },
+  "weather": {
+    "title": "Weather",
+    "current": "Current Weather",
+    "forecast": "Forecast",
+    "temperature": "Temperature",
+    "humidity": "Humidity",
+    "windSpeed": "Wind Speed"
+  },
+  "news": {
+    "title": "News",
+    "latest": "Latest News",
+    "breaking": "Breaking News",
+    "readMore": "Read More"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "language": "Language",
+    "theme": "Theme",
+    "darkMode": "Dark Mode"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "clearAll": "Clear All",
+    "noUpdates": "No new notifications",
+    "stock_update": "Stock Update",
+    "news_alert": "News Alert",
+    "weather_update": "Weather Update",
+    "notification": "Notification"
+  }
+} 
